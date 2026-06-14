@@ -6,8 +6,8 @@
     "dotenv": "^16.6.1"
   },
   "scripts": {
-    "postinstall": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
+    "postinstall": "echo '=== INSTALLING BACKEND ===' && cd backend && npm install && echo '=== INSTALLING FRONTEND ===' && cd ../frontend && npm install && npm run build && echo '=== BUILD SUCCESSFUL ==='",
     "build": "npm run postinstall",
-    "start": "npm start --prefix backend"
+    "start": "cd backend && npm start"
   }
 }
