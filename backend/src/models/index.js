@@ -6,7 +6,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const sequelize = new Sequelize({
   dialect: 'sqlite',
-  storage: path.join(__dirname, '../../data/expenses.sqlite'),
+  storage: process.env.SQLITE_STORAGE || path.join(__dirname, '../../data/expenses.sqlite'),
   logging: false,
 });
 

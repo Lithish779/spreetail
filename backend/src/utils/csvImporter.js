@@ -4,7 +4,7 @@ import { computeShares } from './splitCalculator.js';
 // USD->INR rate used for the trip period (documented assumption - see DECISIONS.md).
 // A real app would look up historical rates; for this assignment we use a fixed
 // rate representative of March 2026 and document it.
-const USD_TO_INR_RATE = 84;
+const USD_TO_INR_RATE = parseFloat(process.env.USD_TO_INR_RATE) || 84;
 
 /**
  * Parses the raw CSV text and returns:
