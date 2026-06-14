@@ -2,6 +2,9 @@
   "name": "flat4b-expenses-root",
   "version": "1.0.0",
   "private": true,
+  "dependencies": {
+    "dotenv": "^16.6.1"
+  },
   "scripts": {
     "postinstall": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
     "build": "npm run postinstall",
