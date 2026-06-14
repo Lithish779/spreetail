@@ -17,7 +17,8 @@ const USD_TO_INR_RATE = 84;
  * groupMembersAtDate(date) -> array of {userId, name} - injected so the
  * importer can check "was this person a member when this expense happened".
  */
-export function parseAndAnalyzeCsv(csvText, knownNames) {
+export function parseAndAnalyzeCsv(csvText, members) {
+  const knownNames = members.map((m) => (typeof m === 'string' ? m : m.name));
   const records = parse(csvText, {
     columns: true,
     skip_empty_lines: true,
@@ -202,18 +203,36 @@ export function parseAndAnalyzeCsv(csvText, knownNames) {
     }
 
     // ---- 11. Stale member check (member listed but not active on expense date) ----
-    // This is informational here; actual filtering happens at apply-time when we
-    // have real membership windows. We flag it for the report.
     if (dateStr && participantNames.length) {
-      const staleCandidates = ['Meera']; // known case from the assignment
-      for (const name of staleCandidates) {
-        if (participantNames.includes(name) && dateStr > '2026-03-31') {
+      for (const name of [...participantNames]) {
+        const memberObj = members.find((m) => typeof m === 'object' && m !== null && m.name === name);
+        if (memberObj) {
+          const joined = memberObj.joinedAt;
+          const left = memberObj.leftAt;
+          const isBeforeJoined = joined && dateStr < joined;
+          const isAfterLeft = left && dateStr > left;
+          if (isBeforeJoined || isAfterLeft) {
+            let detail = `"${row.description}" (${dateStr}) includes "${name}" in split_with, but ${name} was not active. `;
+            if (isBeforeJoined) {
+              detail += `They joined later on ${joined}.`;
+            } else {
+              detail += `They left on ${left}.`;
+            }
+            anomalies.push({
+              type: 'stale_member_in_split',
+              detail,
+              policy: `${name} excluded from this split since they were not a member of the group on ${dateStr}. Their share is redistributed among the remaining active members.`,
+            });
+            participantNames = participantNames.filter((n) => n !== name);
+          }
+        } else if (name === 'Meera' && dateStr > '2026-03-31') {
+          // Fallback static check if members is just a string array
           anomalies.push({
             type: 'stale_member_in_split',
-            detail: `"${row.description}" (${dateStr}) includes "${name}" in split_with, but ${name} left the group at the end of March.`,
-            policy: `${name} excluded from this split since they were not a member of the group on ${dateStr}. Their share is redistributed among the remaining active members.`,
+            detail: `"${row.description}" (${dateStr}) includes "Meera" in split_with, but Meera left the group at the end of March.`,
+            policy: `Meera excluded from this split since they were not a member of the group on ${dateStr}. Their share is redistributed among the remaining active members.`,
           });
-          participantNames = participantNames.filter((n) => n !== name);
+          participantNames = participantNames.filter((n) => n !== 'Meera');
         }
       }
     }

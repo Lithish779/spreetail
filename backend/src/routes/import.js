@@ -20,7 +20,20 @@ router.post('/group/:groupId/preview', upload.single('file'), async (req, res) =
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   const csvText = req.file.buffer.toString('utf-8');
-  const { processed, report } = parseAndAnalyzeCsv(csvText, KNOWN_GROUP_MEMBERS);
+
+  // Fetch all membership windows dynamically from DB
+  const memberships = await GroupMembership.findAll({
+    where: { GroupId: groupId },
+    include: [User],
+  });
+  const members = memberships.map((m) => ({
+    name: m.User.name,
+    joinedAt: m.joinedAt,
+    leftAt: m.leftAt,
+  }));
+  const membersArg = members.length ? members : KNOWN_GROUP_MEMBERS;
+
+  const { processed, report } = parseAndAnalyzeCsv(csvText, membersArg);
 
   const batch = await ImportBatch.create({
     GroupId: groupId,
